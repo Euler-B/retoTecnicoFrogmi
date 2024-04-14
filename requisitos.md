@@ -8,7 +8,9 @@ Se espera el desarrollo de una aplicación en Ruby o framework basado en Ruby qu
 ### 1.1 Obtención de datos desde feed y persistencia:
 Desarrollar una Task que permita obtener data sismológica desde el sitio USGS (earthquake.usgs.gov). Este feed entrega data en el formato GeoJSON utilizado para estructuras de datos geográficas, por ejemplo un Feature (un evento sismológico), pero no te preocupes, GeoJSON usa el estándar JSON ;)
 
-Específicamente se debe obtener desde el feed "Past 30 days" (earthquake.usgs.gov/earthqu...) la información de la colección features. Específicamente por cada elemento:
+- Específicamente se debe obtener desde el feed `Past 30days`:
+  https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson
+- la información de la colección features. Específicamente por cada elemento:
 
 `id`, `properties.mag`, `properties.place`, `properties.time`, `properties.url`, `properties.tsunami`, `properties.magType`, `properties.title`, `geometry.coordinates[0]` (longitude) y `geometry.coordinates[1]` (latitude).
 
