@@ -29,6 +29,8 @@ namespace :sismo do
           place: properties['place'],
           magType: properties['magType'],
           mag: properties['mag'],
+          tsunami: properties['tsunami'],
+          external_id: feature['id'],
           latitude: geometry[1],
           longitude: geometry[0]
         )
