@@ -1,0 +1,44 @@
+body {
+    font-family: Arial, sans-serif;
+  }
+  
+  h1 {
+    text-align: center;
+  }
+  
+  .filters {
+    margin-bottom: 20px;
+  }
+  
+  #sismosContainer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .sismoCard {
+    width: 300px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px;
+  }
+  
+  .sismoCard h2 {
+    font-size: 18px;
+    margin: 0;
+  }
+  
+  .sismoCard p {
+    margin: 5px 0;
+  }
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .pagination a {
+    margin: 0 5px;
+  }

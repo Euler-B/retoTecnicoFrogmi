@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Sismos</title>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+  <h1>Sismos</h1>
+
+  <div class="filters">
+    <label for="magType">Tipo de magnitud:</label>
+    <select id="magType">
+      <option value="">Todos</option>
+      <option value="ml">ML</option>
+      <option value="mb">MB</option>
+      <option value="md">MD</option>
+      <option value="mw">MW</option>
+    </select>
+    <button id="filterButton">Filtrar</button>
+  </div>
+
+  <div id="sismosContainer"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
