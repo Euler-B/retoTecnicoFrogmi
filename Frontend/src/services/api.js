@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+const API_BASE_URL = 'http://localhost:3000/v1';
 
 export const getFeatures = async (params = {}) => {
   try {
@@ -12,10 +12,23 @@ export const getFeatures = async (params = {}) => {
       params['filters[end_date]'] = new Date(params['filters[end_date]']).toISOString();
     }
 
-    const response = await axios.get(`${API_BASE_URL}/features`, { params });
+    const response = await axios.get(`${API_BASE_URL}/sismos`, { params });
     return response.data;
   } catch (error) {
     console.error('Error fetching features:', error);
+    throw error;
+  }
+};
+
+export const createComment = async (featureId, body) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/sismos/${featureId}/comments`,
+      { body }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error creating comment:', error);
     throw error;
   }
 };

@@ -1,56 +1,78 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useMemo } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
 
-// Fix for default marker icons in react-leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+const getMarkerColor = (mag) => {
+  if (!mag) return '#888';
+  if (mag < 3) return '#4caf50';
+  if (mag < 5) return '#ff9800';
+  if (mag < 7) return '#f44336';
+  return '#b71c1c';
+};
+
+const getMarkerRadius = (mag) => {
+  if (!mag) return 6;
+  return Math.max(6, mag * 5);
+};
 
 const SeismicMap = ({ features }) => {
-  if (!features || features.length === 0) {
+  const validFeatures = useMemo(() => {
+    if (!features) return [];
+    return features.filter((f) => {
+      const coords = f.attributes?.coordinates;
+      return coords?.latitude != null && coords?.longitude != null;
+    });
+  }, [features]);
+
+  if (validFeatures.length === 0) {
     return null;
   }
 
-  // Calculate center based on first feature
-  const center = [
-    features[0].properties.latitude,
-    features[0].properties.longitude
-  ];
+  const first = validFeatures[0].attributes.coordinates;
 
   return (
-    <MapContainer
-      center={center}
-      zoom={4}
-      style={{ height: '500px', width: '100%' }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
-      {features.map((feature) => (
-        <Marker
-          key={feature.id}
-          position={[feature.properties.latitude, feature.properties.longitude]}
-        >
-          <Popup>
-            <div>
-              <h3>Magnitude: {feature.properties.mag}</h3>
-              <p>Location: {feature.properties.place}</p>
-              <p>Type: {feature.properties.mag_type}</p>
-              <p>Time: {new Date(feature.properties.time).toLocaleString()}</p>
-              <a href={feature.links.external_url} target="_blank" rel="noopener noreferrer">
-                More Info
-              </a>
-            </div>
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+    <div style={{ height: '500px', width: '100%', marginBottom: '16px' }}>
+      <MapContainer
+        center={[first.latitude, first.longitude]}
+        zoom={4}
+        style={{ height: '100%', width: '100%', borderRadius: '8px' }}
+        scrollWheelZoom={true}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        />
+        {validFeatures.map((feature) => {
+          const coords = feature.attributes.coordinates;
+          const mag = feature.attributes.magnitude;
+          return (
+            <CircleMarker
+              key={feature.id}
+              center={[coords.latitude, coords.longitude]}
+              radius={getMarkerRadius(mag)}
+              pathOptions={{
+                fillColor: getMarkerColor(mag),
+                color: '#333',
+                weight: 1,
+                fillOpacity: 0.8,
+              }}
+            >
+              <Popup>
+                <div>
+                  <h3>Magnitude: {mag}</h3>
+                  <p>Location: {feature.attributes.place}</p>
+                  <p>Type: {feature.attributes.mag_type}</p>
+                  <p>Time: {new Date(feature.attributes.time).toLocaleString()}</p>
+                  <a href={feature.links.external_url} target="_blank" rel="noopener noreferrer">
+                    More Info
+                  </a>
+                </div>
+              </Popup>
+            </CircleMarker>
+          );
+        })}
+      </MapContainer>
+    </div>
   );
 };
 

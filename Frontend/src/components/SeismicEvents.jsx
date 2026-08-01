@@ -15,7 +15,7 @@ import {
   TextField,
   Button,
 } from '@mui/material';
-import { getFeatures } from '../services/api';
+import { getFeatures, createComment } from '../services/api';
 import SeismicMap from './SeismicMap';
 import Welcome from './Welcome';
 
@@ -27,8 +27,12 @@ const SeismicEvents = () => {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [magType, setMagType] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
+  const [commentInputs, setCommentInputs] = useState({});
+  const [commentSubmitting, setCommentSubmitting] = useState({});
+  const [commentFeedback, setCommentFeedback] = useState({});
 
   // Get default dates (last 30 days)
   const getDefaultDates = () => {
@@ -43,12 +47,13 @@ const SeismicEvents = () => {
 
   const [dates, setDates] = useState(getDefaultDates());
 
-  const handleSearch = async () => {
+  const handleSearch = async (pageOverride = null) => {
     try {
       setLoading(true);
       setHasSearched(true);
+      const currentPage = typeof pageOverride === 'number' ? pageOverride : page;
       const params = {
-        page,
+        page: currentPage,
         per_page: 10,
         ...(magType && { 'filters[mag_type]': magType }),
         'filters[start_date]': dates.start,
@@ -56,7 +61,8 @@ const SeismicEvents = () => {
       };
       
       const data = await getFeatures(params);
-      setFeatures(data.features);
+      setFeatures(data.data);
+      setTotal(data.pagination.total);
       setTotalPages(Math.ceil(data.pagination.total / data.pagination.per_page));
       setError(null);
     } catch (err) {
@@ -69,9 +75,7 @@ const SeismicEvents = () => {
 
   const handlePageChange = (event, value) => {
     setPage(value);
-    if (hasSearched) {
-      handleSearch();
-    }
+    handleSearch(value);
   };
 
   const handleDateChange = (field) => (event) => {
@@ -81,13 +85,31 @@ const SeismicEvents = () => {
     }));
   };
 
+  const handleSubmitComment = async (featureId) => {
+    const body = (commentInputs[featureId] || '').trim();
+    if (!body) return;
+
+    setCommentSubmitting(prev => ({ ...prev, [featureId]: true }));
+    setCommentFeedback(prev => ({ ...prev, [featureId]: null }));
+    try {
+      await createComment(featureId, body);
+      setCommentInputs(prev => ({ ...prev, [featureId]: '' }));
+      setCommentFeedback(prev => ({ ...prev, [featureId]: { type: 'success', message: 'Comment added' } }));
+    } catch (err) {
+      const message = err.response?.data?.errors?.join(', ') || err.response?.data?.error || 'Failed to add comment';
+      setCommentFeedback(prev => ({ ...prev, [featureId]: { type: 'error', message } }));
+    } finally {
+      setCommentSubmitting(prev => ({ ...prev, [featureId]: false }));
+    }
+  };
+
   if (!hasSearched) {
     return (
       <>
         <Container maxWidth="lg" sx={{ py: 4 }}>
           <Paper sx={{ p: 2, mb: 4 }}>
             <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} sm={3}>
+              <Grid size={{ xs: 12, sm: 3 }}>
                 <TextField
                   label="Start Date"
                   type="date"
@@ -97,7 +119,7 @@ const SeismicEvents = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid size={{ xs: 12, sm: 3 }}>
                 <TextField
                   label="End Date"
                   type="date"
@@ -107,7 +129,7 @@ const SeismicEvents = () => {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid size={{ xs: 12, sm: 3 }}>
                 <FormControl fullWidth>
                   <InputLabel>Magnitude Type</InputLabel>
                   <Select
@@ -124,7 +146,7 @@ const SeismicEvents = () => {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12} sm={3}>
+              <Grid size={{ xs: 12, sm: 3 }}>
                 <Button
                   variant="contained"
                   color="primary"
@@ -155,7 +177,7 @@ const SeismicEvents = () => {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <Paper sx={{ p: 2, mb: 4 }}>
         <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <TextField
               label="Start Date"
               type="date"
@@ -165,7 +187,7 @@ const SeismicEvents = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <TextField
               label="End Date"
               type="date"
@@ -175,7 +197,7 @@ const SeismicEvents = () => {
               InputLabelProps={{ shrink: true }}
             />
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <FormControl fullWidth>
               <InputLabel>Magnitude Type</InputLabel>
               <Select
@@ -192,7 +214,7 @@ const SeismicEvents = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid size={{ xs: 12, sm: 3 }}>
             <Button
               variant="contained"
               color="primary"
@@ -210,12 +232,18 @@ const SeismicEvents = () => {
         <Typography color="error">{error}</Typography>
       ) : features.length > 0 ? (
         <>
+          <Box sx={{ mb: 2, textAlign: 'center' }}>
+            <Typography variant="body1" color="text.secondary">
+              Showing {features.length} of {total.toLocaleString()} events &mdash; Page {page} of {totalPages}
+            </Typography>
+          </Box>
+
           <Grid container spacing={3}>
-            <Grid item xs={12}>
+            <Grid size={12}>
               <SeismicMap features={features} />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid size={12}>
               <Typography variant="h6" gutterBottom sx={{ mt: 2 }}>
                 Event List
               </Typography>
@@ -223,13 +251,13 @@ const SeismicEvents = () => {
                 <Card key={feature.id} sx={{ mb: 2 }}>
                   <CardContent>
                     <Typography variant="h6">
-                      Magnitude {feature.properties.mag} ({feature.properties.mag_type})
+                      Magnitude {feature.attributes.magnitude} ({feature.attributes.mag_type})
                     </Typography>
                     <Typography color="textSecondary">
-                      Location: {feature.properties.place}
+                      Location: {feature.attributes.place}
                     </Typography>
                     <Typography color="textSecondary">
-                      Time: {new Date(feature.properties.time).toLocaleString()}
+                      Time: {new Date(feature.attributes.time).toLocaleString()}
                     </Typography>
                     <Box sx={{ mt: 1 }}>
                       <a
@@ -240,13 +268,46 @@ const SeismicEvents = () => {
                         More Details
                       </a>
                     </Box>
+
+                    <Box sx={{ mt: 2, display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+                      <TextField
+                        size="small"
+                        placeholder="Add a comment..."
+                        value={commentInputs[feature.id] || ''}
+                        onChange={(e) =>
+                          setCommentInputs(prev => ({ ...prev, [feature.id]: e.target.value }))
+                        }
+                        fullWidth
+                      />
+                      <Button
+                        variant="contained"
+                        size="small"
+                        onClick={() => handleSubmitComment(feature.id)}
+                        disabled={
+                          commentSubmitting[feature.id] ||
+                          !(commentInputs[feature.id] || '').trim()
+                        }
+                        sx={{ minWidth: '100px', height: '40px' }}
+                      >
+                        {commentSubmitting[feature.id] ? 'Sending...' : 'Comment'}
+                      </Button>
+                    </Box>
+                    {commentFeedback[feature.id] && (
+                      <Typography
+                        variant="body2"
+                        color={commentFeedback[feature.id].type === 'success' ? 'success.main' : 'error'}
+                        sx={{ mt: 1 }}
+                      >
+                        {commentFeedback[feature.id].message}
+                      </Typography>
+                    )}
                   </CardContent>
                 </Card>
               ))}
             </Grid>
 
-            <Grid item xs={12}>
-              <Box display="flex" justifyContent="center" mt={2}>
+            <Grid size={12}>
+              <Box display="flex" justifyContent="center" mt={2} pb={6}>
                 <Pagination
                   count={totalPages}
                   page={page}
