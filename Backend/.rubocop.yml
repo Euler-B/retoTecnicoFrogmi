@@ -1,0 +1,27 @@
+AllCops:
+  NewCops: enable
+  SuggestExtensions: false
+  Exclude:
+    - 'bin/*'
+    - 'db/schema.rb'
+    - 'db/migrate/*'
+    - 'vendor/**/*'
+    - 'node_modules/**/*'
+    - 'log/**/*'
+    - 'tmp/**/*'
+
+# Rails omakase style: no documentation or frozen_string_literal requirements
+Style/Documentation:
+  Enabled: false
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+# Serializer and task methods are reasonably longer than the default 10
+Metrics/MethodLength:
+  Max: 30
+
+# Rake DSL uses long task blocks by nature
+Metrics/BlockLength:
+  Exclude:
+    - 'lib/tasks/**/*.rake'

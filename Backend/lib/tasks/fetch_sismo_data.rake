@@ -41,13 +41,11 @@ namespace :sismo do
           else
             puts "Error al guardar el registro: #{sismo.errors.full_messages}"
           end
+        elsif sismo.errors[:mag].include?('La magnitud del sismo debe estar entre -1.0 y 10.0')
+          invalid_records += 1
         else
-          if sismo.errors[:mag].include?("La magnitud del sismo debe estar entre -1.0 y 10.0")
-            invalid_records += 1
-          else
-            duplicate_records += 1
-            puts "Registro duplicado: #{sismo.title}"
-          end
+          duplicate_records += 1
+          puts "Registro duplicado: #{sismo.title}"
         end
       end
     end
@@ -55,6 +53,6 @@ namespace :sismo do
     puts "Nuevos registros guardados: #{new_records}"
     puts "Registros duplicados omitidos: #{duplicate_records}"
     puts "Registros inválidos omitidos: #{invalid_records}"
-    puts "Datos de los sismos obtenido, validados, y persistidos"
+    puts 'Datos de los sismos obtenido, validados, y persistidos'
   end
 end

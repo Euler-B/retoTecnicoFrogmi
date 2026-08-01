@@ -29,7 +29,7 @@ class SismosController < ApplicationController
     serialized_sismos = sismos.map do |sismo|
       {
         id: sismo.id,
-        type: "feature",
+        type: 'feature',
         attributes: {
           external_id: sismo.external_id,
           magnitude: sismo.mag,
