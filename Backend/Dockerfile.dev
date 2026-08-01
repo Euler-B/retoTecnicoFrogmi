@@ -1,0 +1,62 @@
+# syntax = docker/dockerfile:1
+#
+# DEVELOPMENT Dockerfile — do not use this in production.
+#
+# Unlike the production Dockerfile (which uses a multi-stage build to
+# keep the final image small and free of build tools), this image keeps
+# git, compilers and dev libraries installed permanently. You'll need
+# them regularly to install/update gems, debug native extensions, etc.
+#
+# Make sure RUBY_VERSION matches the one in .ruby-version / Gemfile.
+ARG RUBY_VERSION=3.4.10
+FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim
+
+WORKDIR /rails
+
+# Plain development environment: no deployment mode, so Bundler is free
+# to modify the Gemfile.lock (add platforms, update gems, etc.).
+ENV RAILS_ENV="development" \
+    BUNDLE_PATH="/usr/local/bundle"
+
+# System packages needed to:
+# - build-essential, pkg-config: compile gems with native extensions
+# - git: required by Bundler for gems sourced from git repos
+# - libpq-dev, postgresql-client: talk to Postgres (swap for your DB's
+#   client libs if you're using MySQL/SQLite/etc.)
+# - libyaml-dev: required to compile the psych gem (YAML parsing),
+#   which Ruby/Rails depend on internally
+# - libvips: image processing (used by ActiveStorage variants)
+# - curl, vim, less: general-purpose tools useful when working inside
+#   the container
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+        build-essential \
+        git \
+        libpq-dev \
+        libyaml-dev \
+        libvips \
+        pkg-config \
+        curl \
+        postgresql-client \
+        vim \
+        less && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+# Install the Bundler version pinned in Gemfile.lock, if present.
+# This avoids "bundler version mismatch" errors when running bundle
+# commands inside the container.
+COPY Gemfile* ./
+RUN if [ -f Gemfile.lock ]; then \
+      bundle_version=$(tail -1 Gemfile.lock | tr -d '[:space:]'); \
+      if [ -n "$bundle_version" ]; then gem install bundler -v "$bundle_version"; fi; \
+    fi
+RUN bundle install
+
+COPY . .
+
+EXPOSE 3000
+
+# Drops you into a shell by default. docker-compose.dev.yml overrides
+# this with `tty`/`stdin_open` so you can `exec` into a running
+# container instead of relying on this CMD directly.
+CMD ["bash"]

@@ -1,56 +1,64 @@
-# This workflow will install a prebuilt Ruby version, install dependencies, and
-# run tests and linters.
-name: "Continous Integrations for the project"
+name: "CI"
+
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
+
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:11-alpine
+        image: postgres:16-alpine
         ports:
           - "5432:5432"
         env:
           POSTGRES_DB: rails_test
           POSTGRES_USER: rails
           POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     env:
       RAILS_ENV: test
       DATABASE_URL: "postgres://rails:password@localhost:5432/rails_test"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      # Add or replace dependency steps here
+        uses: actions/checkout@v4
+
       - name: Install Ruby and gems
-        uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
+        uses: ruby/setup-ruby@v1
         with:
           working-directory: ./Backend
           bundler-cache: true
-      # Add or replace database setup steps here
+
       - name: Set up database schema
-        run:  cd Backend && bin/rails db:schema:load
-      # Add or replace test runners here
+        run: cd Backend && bin/rails db:schema:load
+
       - name: Run tests
-        run:  cd Backend && bin/rake
+        run: cd Backend && bin/rake
 
   lint:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - name: Install Ruby and gems
-        uses: ruby/setup-ruby@55283cc23133118229fd3f97f9336ee23a179fcf # v1.146.0
+        uses: ruby/setup-ruby@v1
         with:
           working-directory: ./Backend
           bundler-cache: true
-      # Add or replace any other lints here
+
       - name: Security audit dependencies
-        run:  cd Backend && bin/bundler-audit --update
+        run: cd Backend && bin/bundler-audit --update
+
       - name: Security audit application code
-        run:  cd Backend && bin/brakeman -q -w2
+        run: cd Backend && bin/brakeman -q -w2
+
       - name: Lint Ruby files
-        run:  cd Backend && bin/rubocop --parallel
+        run: cd Backend && bin/rubocop --parallel
