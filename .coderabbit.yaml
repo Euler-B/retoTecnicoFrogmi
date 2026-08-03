@@ -24,6 +24,16 @@ reviews:
     base_branches:
       - main
 
+  path_filters:
+    - "!db/schema.rb"
+    - "!tmp/**"
+    - "!log/**"
+    - "!bin/**"
+    - "!vendor/**"
+    - "!storage/**"
+    - "!Gemfile.lock"
+    - "!**.keep"
+
   path_instructions:
     # ── Models ──────────────────────────────────────────────────────────
     - path: "app/models/**/*.rb"
@@ -127,14 +137,3 @@ reviews:
 
 chat:
   auto_reply: true
-
-# ── Path Filters (global exclusions) ─────────────────────────────────────
-path_filters:
-  - "!db/schema.rb"
-  - "!tmp/**"
-  - "!log/**"
-  - "!bin/**"
-  - "!vendor/**"
-  - "!storage/**"
-  - "!Gemfile.lock"
-  - "!**.keep"
