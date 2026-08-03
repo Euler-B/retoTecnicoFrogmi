@@ -108,4 +108,21 @@ class SismosControllerTest < ActionDispatch::IntegrationTest
     json = JSON.parse(response.body)
     assert_equal 'Invalid value for filter: mag_max', json['error']
   end
+
+  # ── Stats endpoint ────────────────────────────────────────────────
+  test 'should get stats with calculated metrics' do
+    get stats_sismos_url
+    assert_response :success
+
+    json = JSON.parse(response.body)
+    assert_equal 'stats', json['data']['id']
+    assert_equal 'stats', json['data']['type']
+
+    attrs = json['data']['attributes']
+    assert_equal Sismo.count, attrs['total_sismos']
+    assert_equal Sismo.where('created_at >= ?', 24.hours.ago).count, attrs['last_24h_count']
+    assert_equal 1, attrs['tsunami_count']
+    assert_equal 7.8, attrs['max_magnitude']['magnitude']
+    assert attrs['by_mag_type'].key?('ml')
+  end
 end

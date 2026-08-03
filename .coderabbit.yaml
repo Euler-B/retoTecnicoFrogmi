@@ -32,7 +32,7 @@ reviews:
     - "!vendor/**"
     - "!storage/**"
     - "!Gemfile.lock"
-    - "!**.keep"
+    - "!**/.keep"
 
   path_instructions:
     # ── Models ──────────────────────────────────────────────────────────
