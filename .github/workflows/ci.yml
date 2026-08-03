@@ -33,14 +33,13 @@ jobs:
       - name: Install Ruby and gems
         uses: ruby/setup-ruby@v1
         with:
-          working-directory: ./Backend
           bundler-cache: true
 
       - name: Set up database schema
-        run: cd Backend && bin/rails db:schema:load
+        run: bin/rails db:schema:load
 
       - name: Run tests
-        run: cd Backend && bin/rake
+        run: bin/rake
 
   lint:
     runs-on: ubuntu-latest
@@ -51,14 +50,13 @@ jobs:
       - name: Install Ruby and gems
         uses: ruby/setup-ruby@v1
         with:
-          working-directory: ./Backend
           bundler-cache: true
 
       - name: Security audit dependencies
-        run: cd Backend && bin/bundler-audit --update
+        run: bin/bundler-audit --update
 
       - name: Security audit application code
-        run: cd Backend && bin/brakeman -q -w2
+        run: bin/brakeman -q -w2
 
       - name: Lint Ruby files
-        run: cd Backend && bin/rubocop --parallel
+        run: bin/rubocop --parallel

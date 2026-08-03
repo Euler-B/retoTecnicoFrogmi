@@ -1,8 +1,8 @@
-# Seismic Events Explorer
+# Telurify API
 
-A full-stack application that fetches, stores, and visualizes worldwide seismic activity data from the [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/). Events are collected via a background rake task, exposed through a REST API, and explored through an interactive web interface with map visualization, filtering, pagination, and per-event comments.
+The Rails backend API service for **Telurify**, a platform that collects, processes, and exposes worldwide seismic activity data from the [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/). Events are collected via a background rake task, exposed through a JSON API, and allow users to submit structured "Did You Feel It?" intensity reports.
 
-> **Note:** This project is planned to be split into two separate repositories — one for the backend API and one for the frontend — so each can evolve with its own release cycle, deployment pipeline, and free-tier hosting strategy, without cross-cutting responsibilities.
+> **Note:** The frontend application lives in a separate repository (`telurify-web`), built with Astro and React islands.
 
 ---
 
@@ -10,21 +10,11 @@ A full-stack application that fetches, stores, and visualizes worldwide seismic 
 
 ```mermaid
 flowchart LR
-    subgraph Client
-        U[User Browser]
-    end
-
-    subgraph Frontend["Frontend (React 19 + Vite)"]
-        UI[SeismicEvents UI]
-        MAP[SeismicMap<br/>react-leaflet]
-        SVC[api.js<br/>axios]
-    end
-
     subgraph Backend["Backend (Rails 7.2 API-only)"]
         RC[SismosController<br/>GET /v1/sismos]
-        CC[CommentsController<br/>POST /v1/sismos/:id/comments]
+        ReportsController[ReportsController<br/>POST /v1/sismos/:id/reports]
         SM[Sismo Model]
-        CM[Comment Model]
+        RM[Report Model]
         RT[Rake Task<br/>sismo:fetch_data]
     end
 
@@ -36,15 +26,10 @@ flowchart LR
         USGS[USGS GeoJSON Feed<br/>all_month.geojson]
     end
 
-    U --> UI
-    UI --> MAP
-    UI --> SVC
-    SVC -->|HTTP/JSON| RC
-    SVC -->|HTTP/JSON| CC
     RC --> SM
-    CC --> CM
+    ReportsController --> RM
     SM --> PG
-    CM --> PG
+    RM --> PG
     RT -->|fetch & validate| USGS
     RT -->|persist| SM
 ```
@@ -53,10 +38,9 @@ flowchart LR
 
 | Layer | Responsibility |
 |---|---|
-| **Frontend** | Interactive UI: filter events by date range and magnitude type, render them on a Leaflet map (color-coded by magnitude), paginate results, and post comments per event. |
-| **Backend API** | Serves paginated, filterable seismic events in a JSON:API-style format and persists comments associated with events. |
+| **Backend API** | Serves paginated, filterable seismic events in a JSON:API-style format and accepts structured intensity reports for events. |
 | **Rake task** | Pulls the USGS "Past 30 days" GeoJSON feed, validates ranges (magnitude, latitude, longitude), skips duplicates, and persists records. |
-| **PostgreSQL** | Stores `sismos` (events) and `comments`. |
+| **PostgreSQL** | Stores `sismos` (events) and `reports`. |
 
 ---
 
@@ -68,14 +52,8 @@ flowchart LR
 - `httparty` (USGS feed), `will_paginate`, `rack-cors`
 - Linting/security: `rubocop`, `brakeman`, `bundler-audit`
 
-**Frontend**
-- React 19 + Vite 6
-- Material UI 7
-- Leaflet / react-leaflet 5 (OpenStreetMap tiles)
-- axios
-
 **Infrastructure**
-- Docker Compose (dev environment: `db`, `backend`, `frontend`)
+- Docker Compose (dev environment: `db`, `backend`)
 - Makefile as the single entry point for all workflows
 - GitHub Actions CI (tests + linting/security)
 
@@ -85,7 +63,7 @@ flowchart LR
 
 ### Prerequisites
 
-Only **Docker** and **Make** are required — no local Ruby, Node, or PostgreSQL installation needed. All dependencies run inside containers, and the source code is bind-mounted so changes inside containers (e.g., `Gemfile.lock`, `package-lock.json`) are reflected in your local directory.
+Only **Docker** and **Make** are required — no local Ruby or PostgreSQL installation needed. All dependencies run inside containers, and the source code is bind-mounted so changes inside containers (e.g., `Gemfile.lock`) are reflected in your local directory.
 
 ### First-time setup
 
@@ -97,7 +75,7 @@ This single command will:
 1. Build the dev Docker images
 2. Start PostgreSQL and wait for it to be healthy
 3. Create the databases and run migrations
-4. Start all services (`db`, `backend`, `frontend`)
+4. Start all backend services (`db`, `backend`)
 
 ### Load seismic data
 
@@ -113,7 +91,6 @@ The task reports how many records were created, skipped as duplicates, and rejec
 
 | App | URL |
 |---|---|
-| Frontend | http://localhost:5173 |
 | Backend API | http://localhost:3000/v1/sismos |
 
 ---
@@ -131,22 +108,15 @@ The task reports how many records were created, skipped as duplicates, and rejec
 | `make dev-build` | Rebuild Docker images (needed after changing the Gemfile) |
 | `make dev-install` | Install/update dependencies inside the containers |
 | `make dev-shell-backend` | Open a shell in the backend container |
-| `make dev-shell-frontend` | Open a shell in the frontend container |
 
 ### Updating dependencies
 
-Dependencies are updated **inside** the containers; lockfiles are updated on your host via bind mounts:
+Dependencies are updated **inside** the container; lockfiles are updated on your host via bind mounts:
 
 ```bash
-# Backend
 make dev-shell-backend
 bundle update           # or: bundle update <gem>
 # Gemfile.lock on your host is now updated
-
-# Frontend
-make dev-shell-frontend
-npm update              # or: npm install <pkg>@latest --legacy-peer-deps
-# package-lock.json on your host is now updated
 ```
 
 ### API Endpoints
@@ -203,19 +173,19 @@ Response:
 }
 ```
 
-**Create a comment on an event**
+**Submit an intensity report for an event**
 
 ```
-POST /v1/sismos/:sismo_id/comments
+POST /v1/sismos/:sismo_id/reports
 ```
 
 ```bash
-curl -X POST 'http://localhost:3000/v1/sismos/1/comments' \
+curl -X POST 'http://localhost:3000/v1/sismos/1/reports' \
   -H 'Content-Type: application/json' \
-  -d '{"body": "Felt this one downtown."}'
+  -d '{"felt": true, "intensity": "moderate"}'
 ```
 
-- `201 Created` — comment persisted (body must be non-empty)
+- `201 Created` — report persisted (`felt`: boolean, `intensity`: one of `not_felt`, `weak`, `light`, `moderate`, `strong`, `severe`)
 - `422 Unprocessable Entity` — validation failed
 - `404 Not Found` — the referenced event does not exist
 
@@ -239,8 +209,11 @@ The GitHub Actions workflow (`.github/workflows/ci.yml`) runs the test suite and
 
 ## Roadmap
 
-- **Repository split**: the monorepo will be segmented into two repositories — `seismic-api` (Rails backend) and `seismic-web` (React frontend) — enabling independent deployments on free-tier services and clearer ownership of each stack.
-- Upgrade path to Rails 8.x (currently on 7.2; see `Backend/config/brakeman.ignore`).
+- **Repository split**: Completed — backend API isolated in `telurify-api`. The frontend now lives in a separate repository (`telurify-web`) built with Astro.
+- **Ingestion service**: Go service for real-time USGS event ingestion.
+- **Notifications service**: TypeScript service for user alerts.
+- **News action**: GitHub Action (TypeScript) for generating news posts on high-magnitude seismic events.
+- Upgrade path to Rails 8.x (currently on 7.2; see `config/brakeman.ignore`).
 
 ---
 

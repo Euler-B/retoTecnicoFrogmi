@@ -10,31 +10,32 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 20_260_801_210_229) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_02_195830) do
   # These are extensions that must be enabled in order to support this database
-  enable_extension 'plpgsql'
+  enable_extension "plpgsql"
 
-  create_table 'comments', force: :cascade do |t|
-    t.bigint 'sismo_id', null: false
-    t.text 'body', null: false
-    t.datetime 'created_at', null: false
-    t.datetime 'updated_at', null: false
-    t.index ['sismo_id'], name: 'index_comments_on_sismo_id'
+  create_table "reports", force: :cascade do |t|
+    t.bigint "sismo_id", null: false
+    t.boolean "felt", null: false
+    t.string "intensity", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["sismo_id"], name: "index_reports_on_sismo_id"
   end
 
-  create_table 'sismos', force: :cascade do |t|
-    t.string 'title'
-    t.string 'url'
-    t.string 'place'
-    t.string 'magType'
-    t.float 'mag'
-    t.float 'latitude'
-    t.float 'longitude'
-    t.datetime 'created_at', null: false
-    t.datetime 'updated_at', null: false
-    t.boolean 'tsunami'
-    t.string 'external_id'
+  create_table "sismos", force: :cascade do |t|
+    t.string "title"
+    t.string "url"
+    t.string "place"
+    t.string "magType"
+    t.float "mag"
+    t.float "latitude"
+    t.float "longitude"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.boolean "tsunami"
+    t.string "external_id"
   end
 
-  add_foreign_key 'comments', 'sismos'
+  add_foreign_key "reports", "sismos"
 end

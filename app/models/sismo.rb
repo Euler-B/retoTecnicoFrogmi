@@ -1,5 +1,5 @@
 class Sismo < ApplicationRecord
-  has_many :comments, dependent: :destroy
+  has_many :reports, dependent: :destroy
 
   validates :title, :url, :place, :magType, :latitude, :longitude, presence: true
   validates :mag, inclusion: { in: -1.0..10.0 }

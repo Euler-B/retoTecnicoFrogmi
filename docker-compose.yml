@@ -17,7 +17,7 @@ services:
 
   backend:
     build:
-      context: ./Backend
+      context: .
       dockerfile: Dockerfile.dev
     command: bin/rails server -b 0.0.0.0
     ports:
@@ -28,24 +28,10 @@ services:
       USER_DB: ${USER_DB:-frogmi}
       PASSWORD_DB: ${PASSWORD_DB:-frogmi}
     volumes:
-      - ./Backend:/rails
+      - .:/rails
     depends_on:
       db:
         condition: service_healthy
-    stdin_open: true
-    tty: true
-
-  frontend:
-    build:
-      context: ./Frontend
-      dockerfile: Dockerfile.dev
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./Frontend:/app
-      - /app/node_modules
-    depends_on:
-      - backend
     stdin_open: true
     tty: true
 

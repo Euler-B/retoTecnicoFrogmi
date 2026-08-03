@@ -1,0 +1,9 @@
+one:
+  sismo: one
+  felt: true
+  intensity: moderate
+
+two:
+  sismo: two
+  felt: false
+  intensity: not_felt
