@@ -1,0 +1,140 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# CodeRabbit Configuration — Telurify-API
+# https://docs.coderabbit.ai/guides/configure-coderabbit
+
+language: "en-US"
+
+early_access: true
+
+tone_instructions: >
+  Be direct and technical. Skip pleasantries. When suggesting a fix,
+  always provide the corrected code snippet ready to copy-paste.
+
+reviews:
+  profile: "assertive"
+  request_changes_workflow: true
+  high_level_summary: true
+  high_level_summary_placeholder: "@coderabbitai summary"
+  poem: false
+  collapse_walkthrough: false
+  sequence_diagrams: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+
+  path_instructions:
+    # ── Models ──────────────────────────────────────────────────────────
+    - path: "app/models/**/*.rb"
+      instructions: |
+        Models in this project:
+        - `Sismo` (earthquake record): has_many :reports, validates mag (-1..10), lat (-90..90), lng (-180..180).
+          Uses a camelCase column `magType` inherited from the USGS GeoJSON feed — do NOT flag it as a naming violation; it is intentional.
+        - `Report` ("Did You Feel It?" intensity): belongs_to :sismo, validates `felt` (boolean) and `intensity` against INTENSITY_LEVELS constant.
+        Review checklist:
+        - Ensure new associations include `dependent:` strategy.
+        - Validate any new numeric column with proper range inclusion.
+        - Flag missing database-level constraints (null: false, unique indexes) that should match model validations.
+        - If a scope or query method is added, check for potential N+1 when used from controllers.
+        - Any new model with user-facing input MUST have strong validations (no free text on public, unauthenticated endpoints).
+
+    # ── Controllers ─────────────────────────────────────────────────────
+    - path: "app/controllers/**/*.rb"
+      instructions: |
+        This is a Rails 7.2 API-only app (config.api_only = true). No views, no sessions, no cookies.
+        Current API surface (all under `/v1`):
+        - GET  /v1/sismos           → SismosController#index (paginated with will_paginate, max 1000 per page)
+        - POST /v1/sismos/:id/reports → ReportsController#create (unauthenticated, public endpoint)
+        Review checklist:
+        - There is NO authentication — any new endpoint is publicly accessible. Flag if sensitive data is exposed.
+        - Pagination: ensure `will_paginate` is used consistently; reject unbounded `.all` queries.
+        - Serialization is manual (no ActiveModelSerializers/jbuilder). If a new endpoint is added, ensure it follows the same `{ data: ..., pagination: ... }` or `{ data: { id, type, attributes } }` JSON envelope.
+        - Filtering: params are accessed directly (e.g. `params[:filters][:mag_type]`). Ensure new filters guard against nil with `.present?`.
+        - Error responses must use structured JSON `{ error: "..." }` or `{ errors: [...] }`, never plain text.
+        - The `set_sismo` before_action pattern (find_by + manual 404) is the project standard; keep it consistent.
+
+    # ── Rake Tasks / Background Data Ingestion ──────────────────────────
+    - path: "lib/tasks/**/*.rake"
+      instructions: |
+        The Rake task `sismo:fetch_data` fetches ~10,000 earthquake records from the USGS monthly GeoJSON feed
+        via HTTParty and bulk-inserts them into PostgreSQL. This task runs as a one-off cron/manual invocation, not as a queued job.
+        Review checklist:
+        - HTTP resilience: any new or modified external HTTP call MUST handle timeouts (HTTParty default is none),
+          network errors (Net::OpenTimeout, Net::ReadTimeout, SocketError), and unexpected/malformed JSON.
+        - Deduplication: existing logic uses `Sismo.find_by(title:)` — if the dedup key changes, verify uniqueness at the DB level too.
+        - Performance: bulk operations on thousands of records should consider `insert_all` / `upsert_all` or batching,
+          not individual `save` calls inside `.each`.
+        - Logging: use `Rails.logger` instead of bare `puts` for production-safe output.
+        - Never hardcode the USGS URL without allowing ENV override for testing.
+
+    # ── Migrations ──────────────────────────────────────────────────────
+    - path: "db/migrate/**/*.rb"
+      instructions: |
+        Database is PostgreSQL 16. The `sismos` table has a camelCase column `magType` — this is intentional legacy from the USGS schema.
+        Review checklist:
+        - Every foreign key column MUST have an index (e.g. `index: true` or `add_index`).
+        - Non-nullable columns should have `null: false` at the DB level, not just model validations.
+        - For large tables (sismos has ~10k+ rows), flag migrations that lock the table (e.g. adding a column with a default on older PG).
+        - All migrations must be reversible or explicitly provide `up`/`down`.
+
+    # ── Tests ───────────────────────────────────────────────────────────
+    - path: "test/**/*.rb"
+      instructions: |
+        Test framework is Minitest (not RSpec). Tests run in parallel (`parallelize workers: :number_of_processors`).
+        Fixtures are in `test/fixtures/`. Current test coverage is minimal:
+        - `SismosControllerTest`: only tests `GET index` returns success.
+        - `ReportsControllerTest`: tests valid creation, invalid intensity rejection, and missing sismo 404.
+        - `SismoTest`: placeholder, no assertions.
+        Review checklist:
+        - If a PR adds new controller actions or model logic, flag the absence of corresponding tests.
+        - Suggest edge-case tests: boundary values for mag/lat/lng, empty filter params, pagination limits.
+        - Ensure test data uses fixtures, not factories (this project does not use FactoryBot).
+        - External HTTP calls in tests should be stubbed (e.g. with WebMock) to avoid flaky CI.
+
+    # ── Configuration ───────────────────────────────────────────────────
+    - path: "config/**/*"
+      instructions: |
+        Key configurations to be aware of:
+        - CORS: defined in BOTH `config/application.rb` (hardcoded localhost origins) AND `config/initializers/cors.rb` (ENV-driven).
+          Flag any CORS change that could widen access unintentionally or creates duplication.
+        - `database.yml`: uses ENV vars (POSTGRES_HOST, POSTGRES_PORT, USER_DB, PASSWORD_DB). Production uses DATABASE_URL.
+          Never hardcode credentials.
+        - `puma.rb`: production uses cluster mode with `WEB_CONCURRENCY`. Ensure thread pool matches `RAILS_MAX_THREADS`.
+        - `brakeman.ignore`: manually curated. Only accept new ignores with a clear `note` explaining why.
+
+    # ── Docker / CI ─────────────────────────────────────────────────────
+    - path: "{Dockerfile*,docker-compose.yml,.github/workflows/**}"
+      instructions: |
+        Runtime: Ruby 3.4.10, PostgreSQL 16-alpine, multi-stage Dockerfile.
+        CI pipeline runs on every PR to `main`: Minitest suite, bundler-audit, Brakeman, and RuboCop.
+        Review checklist:
+        - Ruby version must match across `.ruby-version`, `Gemfile`, `Dockerfile`, and `Dockerfile.dev`.
+        - Docker images should pin to specific versions, not `latest`.
+        - CI secrets must come from GitHub Secrets, never hardcoded in workflow files.
+        - Ensure new CI steps don't duplicate existing checks (e.g. don't add a separate RuboCop step if one exists).
+
+    # ── Gemfile ─────────────────────────────────────────────────────────
+    - path: "Gemfile"
+      instructions: |
+        Key dependencies: rails 7.2, pg, puma, httparty, will_paginate, rack-cors, dotenv-rails.
+        Dev/test: minitest, debug, rubocop, brakeman, bundler-audit.
+        Review checklist:
+        - New gems must justify their addition (avoid bloat in an API-only app).
+        - Prefer gems actively maintained with recent releases.
+        - Security-sensitive gems (auth, crypto) need extra scrutiny.
+        - Ensure correct group placement (dev-only gems should NOT be in production).
+
+chat:
+  auto_reply: true
+
+# ── Path Filters (global exclusions) ─────────────────────────────────────
+path_filters:
+  - "!db/schema.rb"
+  - "!tmp/**"
+  - "!log/**"
+  - "!bin/**"
+  - "!vendor/**"
+  - "!storage/**"
+  - "!Gemfile.lock"
+  - "!**.keep"
