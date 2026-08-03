@@ -1,4 +1,4 @@
-.PHONY: help backend install clean dev-build dev-up dev-down dev-down-clean dev-setup dev-install dev-shell-backend
+.PHONY: help backend install clean lint lint-fix dev-build dev-up dev-down dev-down-clean dev-setup dev-install dev-lint dev-lint-fix dev-shell-backend
 
 # Colors for terminal output
 GREEN = \033[0;32m
@@ -9,6 +9,8 @@ help: ## Show help information
 	@echo "  make help              - Show this help message"
 	@echo "  make install           - Install all dependencies (host)"
 	@echo "  make backend           - Start backend server (host)"
+	@echo "  make lint              - Run RuboCop linter (host)"
+	@echo "  make lint-fix          - Run RuboCop auto-correct (host)"
 	@echo "  make clean             - Clean temporary files (host)"
 	@echo ""
 	@echo "  Docker dev commands:"
@@ -18,6 +20,8 @@ help: ## Show help information
 	@echo "  make dev-down-clean    - Stop containers + remove volumes (fresh start)"
 	@echo "  make dev-setup         - Full setup: build, create DB, run migrations"
 	@echo "  make dev-install       - Install/update dependencies inside containers"
+	@echo "  make dev-lint          - Run RuboCop linter inside backend container"
+	@echo "  make dev-lint-fix      - Run RuboCop auto-correct inside backend container"
 	@echo "  make dev-shell-backend - Open shell in backend container"
 
 install: ## Install dependencies
@@ -27,6 +31,14 @@ install: ## Install dependencies
 backend: ## Start backend server
 	@echo "$(GREEN)Starting backend server...$(NC)"
 	@bin/rails s
+
+lint: ## Run RuboCop linter (host)
+	@echo "$(GREEN)Running RuboCop...$(NC)"
+	@bundle exec rubocop
+
+lint-fix: ## Run RuboCop auto-correct (host)
+	@echo "$(GREEN)Running RuboCop auto-correct...$(NC)"
+	@bundle exec rubocop -A
 
 clean: ## Clean temporary files
 	@echo "$(GREEN)Cleaning temporary files...$(NC)"
@@ -67,6 +79,14 @@ dev-setup: dev-build ## Full setup: build images, create DB, run migrations, sta
 dev-install: ## Install/update dependencies inside containers
 	@echo "$(GREEN)Installing backend dependencies...$(NC)"
 	docker compose exec backend bundle install
+
+dev-lint: ## Run RuboCop linter inside backend container
+	@echo "$(GREEN)Running RuboCop inside backend container...$(NC)"
+	docker compose exec -T backend bundle exec rubocop
+
+dev-lint-fix: ## Run RuboCop auto-correct inside backend container
+	@echo "$(GREEN)Running RuboCop auto-correct inside backend container...$(NC)"
+	docker compose exec -T backend bundle exec rubocop -A
 
 dev-shell-backend: ## Open shell in backend container
 	docker compose exec backend bash

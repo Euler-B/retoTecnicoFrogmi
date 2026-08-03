@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_02_195830) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_03_034001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -35,6 +35,9 @@ ActiveRecord::Schema[7.2].define(version: 2026_08_02_195830) do
     t.datetime "updated_at", null: false
     t.boolean "tsunami"
     t.string "external_id"
+    t.index ["created_at"], name: "index_sismos_on_created_at"
+    t.index ["mag"], name: "index_sismos_on_mag"
+    t.index ["magType"], name: "index_sismos_on_magType"
   end
 
   add_foreign_key "reports", "sismos"
