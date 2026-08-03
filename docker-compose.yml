@@ -2,15 +2,15 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${USER_DB:-frogmi}
-      POSTGRES_PASSWORD: ${PASSWORD_DB:-frogmi}
-      POSTGRES_DB: frogmi_development
+      POSTGRES_USER: ${USER_DB:-telurify}
+      POSTGRES_PASSWORD: ${PASSWORD_DB:-telurify}
+      POSTGRES_DB: telurify_development
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${USER_DB:-frogmi}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${USER_DB:-telurify}" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -25,8 +25,8 @@ services:
     environment:
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
-      USER_DB: ${USER_DB:-frogmi}
-      PASSWORD_DB: ${PASSWORD_DB:-frogmi}
+      USER_DB: ${USER_DB:-telurify}
+      PASSWORD_DB: ${PASSWORD_DB:-telurify}
     volumes:
       - .:/rails
     depends_on:

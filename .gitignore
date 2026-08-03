@@ -8,7 +8,7 @@
 /.bundle
 
 # Ignore all environment files (except templates and .env.example).
- .env*
+/.env*
 !/.env.example
 !/.env*.erb
 
