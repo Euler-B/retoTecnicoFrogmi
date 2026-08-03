@@ -1,19 +1,53 @@
-# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+# Realistic earthquake fixtures for filter testing
 
 one:
-  title: MyString
-  url: MyString
-  place: MyString
-  magType: MyString
-  mag: 1.5
-  latitude: 1.5
-  longitude: 1.5
+  title: "M 5.2 - 30km S of Atacama, Chile"
+  url: "https://earthquake.usgs.gov/earthquakes/eventpage/us7000example1"
+  place: "30km S of Atacama, Chile"
+  magType: ml
+  mag: 5.2
+  latitude: -27.5
+  longitude: -70.3
+  tsunami: false
+  external_id: us7000example1
+  created_at: <%= 3.days.ago.iso8601 %>
+  updated_at: <%= 3.days.ago.iso8601 %>
 
 two:
-  title: MyString
-  url: MyString
-  place: MyString
-  magType: MyString
-  mag: 1.5
-  latitude: 1.5
-  longitude: 1.5
+  title: "M 7.8 - Near the coast of Hokkaido, Japan"
+  url: "https://earthquake.usgs.gov/earthquakes/eventpage/us7000example2"
+  place: "Near the coast of Hokkaido, Japan"
+  magType: mww
+  mag: 7.8
+  latitude: 42.9
+  longitude: 145.1
+  tsunami: true
+  external_id: us7000example2
+  created_at: <%= 1.day.ago.iso8601 %>
+  updated_at: <%= 1.day.ago.iso8601 %>
+
+three:
+  title: "M 2.1 - 5km NW of The Geysers, CA"
+  url: "https://earthquake.usgs.gov/earthquakes/eventpage/nc7000example3"
+  place: "5km NW of The Geysers, CA"
+  magType: md
+  mag: 2.1
+  latitude: 38.8
+  longitude: -122.8
+  tsunami: false
+  external_id: nc7000example3
+  created_at: <%= 10.days.ago.iso8601 %>
+  updated_at: <%= 10.days.ago.iso8601 %>
+
+four:
+  title: "M 0.5 - 10km SE of Ridgecrest, CA"
+  url: "https://earthquake.usgs.gov/earthquakes/eventpage/ci7000example4"
+  place: "10km SE of Ridgecrest, CA"
+  magType: ml
+  mag: 0.5
+  latitude: 35.6
+  longitude: -117.6
+  tsunami: false
+  external_id: ci7000example4
+  created_at: <%= 30.days.ago.iso8601 %>
+  updated_at: <%= 30.days.ago.iso8601 %>

@@ -21,7 +21,17 @@ Style/FrozenStringLiteralComment:
 Metrics/MethodLength:
   Max: 30
 
-# Rake DSL uses long task blocks by nature
+Metrics/ClassLength:
+  Exclude:
+    - 'app/controllers/sismos_controller.rb'
+    - 'test/controllers/sismos_controller_filters_test.rb'
+    - 'test/controllers/sismos_controller_test.rb'
+    - 'test/models/sismo_test.rb'
+
+# Rake DSL and specific test suites use long blocks by nature
 Metrics/BlockLength:
   Exclude:
     - 'lib/tasks/**/*.rake'
+    - 'test/controllers/sismos_controller_filters_test.rb'
+    - 'test/controllers/sismos_controller_test.rb'
+    - 'test/models/sismo_test.rb'
