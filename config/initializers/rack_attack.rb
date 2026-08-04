@@ -6,12 +6,15 @@ module Rack
     redis_url = ENV['RACK_ATTACK_REDIS_URL'].presence || ENV['REDIS_URL'].presence
 
     Rack::Attack.cache.store = if redis_url
-                                 ActiveSupport::Cache::RedisCacheStore.new(
-                                   url: redis_url,
-                                   namespace: 'rack_attack'
-                                 )
-                               elsif Rails.env.production?
-                                 raise 'RACK_ATTACK_REDIS_URL or REDIS_URL is required in production'
+                                 begin
+                                   ActiveSupport::Cache::RedisCacheStore.new(
+                                     url: redis_url,
+                                     namespace: 'rack_attack'
+                                   )
+                                 rescue StandardError => e
+                                   Rails.logger.warn("Rack::Attack: Redis failed (#{e.message}), using MemoryStore")
+                                   ActiveSupport::Cache::MemoryStore.new
+                                 end
                                else
                                  ActiveSupport::Cache::MemoryStore.new
                                end
