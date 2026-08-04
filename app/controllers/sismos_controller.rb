@@ -13,6 +13,11 @@ class SismosController < ApplicationController
     render json: serialized_sismos
   end
 
+  def stats
+    stats_data = calculate_stats
+    render json: serialize_stats(stats_data)
+  end
+
   private
 
   def filter_sismos
@@ -169,6 +174,40 @@ class SismosController < ApplicationController
         current_page: sismos.current_page,
         total: sismos.total_entries,
         per_page: sismos.per_page
+      }
+    }
+  end
+
+  def calculate_stats
+    max_sismo = Sismo.where.not(mag: nil).order(mag: :desc).first
+
+    {
+      total_sismos: Sismo.count,
+      last_24h_count: Sismo.where('created_at >= ?', 24.hours.ago).count,
+      tsunami_count: Sismo.by_tsunami('true').count,
+      max_magnitude: serialize_max_magnitude(max_sismo),
+      by_mag_type: Sismo.group(:magType).count
+    }
+  end
+
+  def serialize_max_magnitude(sismo)
+    return nil unless sismo
+
+    {
+      id: sismo.id,
+      title: sismo.title,
+      magnitude: sismo.mag,
+      place: sismo.place,
+      time: sismo.created_at.to_s
+    }
+  end
+
+  def serialize_stats(stats_data)
+    {
+      data: {
+        id: 'stats',
+        type: 'stats',
+        attributes: stats_data
       }
     }
   end

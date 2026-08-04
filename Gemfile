@@ -59,3 +59,6 @@ gem 'csv'
 gem 'will_paginate', '~> 4.0'
 
 gem 'rack-cors', '~> 2.0', '>= 2.0.2'
+
+gem 'rack-attack', '~> 6.7'
+gem 'redis', '>= 4.0.1'
