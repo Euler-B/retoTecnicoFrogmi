@@ -42,7 +42,7 @@ jobs:
           persist-credentials: false
 
       - name: Install Ruby and gems
-        uses: ruby/setup-ruby@3612d7c07b4618a385f95b9d36a3e5e40e69a04a # v1.222.0
+        uses: ruby/setup-ruby@277ba2a127aba66d45bad0fa2dc56f80dbfedffa # v1.222.0        
         with:
           bundler-cache: true
 
@@ -81,7 +81,7 @@ jobs:
           fi
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@9780b0c442fbb11e7d0cfd199dd156f3e0d7b114 # v3.3.0
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -89,7 +89,7 @@ jobs:
 
       - name: Extract metadata for Docker
         id: meta
-        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d576c707f25b1f504f739 # v5.7.0
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
@@ -97,7 +97,7 @@ jobs:
             type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@471d1dc4e07e5cd41321f5301416d09a7fed8192 # v6.15.0
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
         with:
           context: .
           file: ./Dockerfile
