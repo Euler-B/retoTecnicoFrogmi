@@ -1,6 +1,6 @@
 # Telurify API
 
-The Rails backend API service for **Telurify**, a platform that collects, processes, and exposes worldwide seismic activity data from the [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/). Events are collected via a background rake task, exposed through a JSON API, and allow users to submit structured "Did You Feel It?" intensity reports.
+The Rails backend API service for **Telurify**, a platform that exposes worldwide seismic activity data collected from the [USGS Earthquake Hazards Program](https://earthquake.usgs.gov/). Events are exposed through a JSON API and allow users to submit structured "Did You Feel It?" intensity reports.
 
 > **Note:** The frontend application lives in a separate repository (`telurify-web`), built with Astro and React islands.
 
@@ -15,7 +15,6 @@ flowchart LR
         ReportsController[ReportsController<br/>POST /v1/sismos/:id/reports]
         SM[Sismo Model]
         RM[Report Model]
-        RT[Rake Task<br/>sismo:fetch_data]
         RA[Rack::Attack<br/>rate limiting]
     end
 
@@ -24,8 +23,9 @@ flowchart LR
         Redis[(Redis / Upstash)]
     end
 
-    subgraph External["External"]
-        USGS[USGS GeoJSON Feed<br/>all_month.geojson]
+    subgraph External["External Services"]
+        Ingestion[Telurify Ingestion]
+        USGS[USGS Earthquake Hazards Program]
     end
 
     RC --> SM
@@ -34,8 +34,8 @@ flowchart LR
     RA -->|counters| Redis
     SM --> PG
     RM --> PG
-    RT -->|fetch & validate| USGS
-    RT -->|persist| SM
+    Ingestion -->|fetch & validate| USGS
+    Ingestion -->|persist| PG
 ```
 
 **Component responsibilities:**
@@ -43,7 +43,7 @@ flowchart LR
 | Layer | Responsibility |
 |---|---|
 | **Backend API** | Serves paginated, filterable seismic events in a JSON:API-style format and accepts structured intensity reports for events. |
-| **Rake task** | Pulls the USGS "Past 30 days" GeoJSON feed, validates ranges (magnitude, latitude, longitude), skips duplicates, and persists records. |
+| **Ingestion service** | The [Telurify Ingestion service](https://github.com/Euler-B/Telurify-Ingestion) collects, validates, and persists seismic events. |
 | **Rack::Attack** | Rate-limits all requests by IP (60 req/min) and throttles the reports endpoint specifically (5 req/min) to prevent spam on a public, unauthenticated endpoint. |
 | **PostgreSQL** | Stores `sismos` (events) and `reports`. |
 | **Redis (Upstash)** | Backs `rack-attack`'s distributed rate-limit counters in production. |
@@ -55,7 +55,7 @@ flowchart LR
 **Backend**
 - Ruby 3.4.10 / Rails 7.2.3 (API-only mode)
 - PostgreSQL 16
-- `httparty` (USGS feed), `will_paginate`, `rack-cors`
+- `will_paginate`, `rack-cors`
 - `rack-attack` + `redis` (rate limiting, backed by Upstash in production)
 - Linting/security: `rubocop`, `brakeman`, `bundler-audit`
 
@@ -86,16 +86,6 @@ This single command will:
 4. Start all backend services (`db`, `backend`)
 
 > **Note on Redis:** no local Redis is required for development. `rack-attack` falls back to an in-memory store automatically when `REDIS_URL` / `RACK_ATTACK_REDIS_URL` are unset.
-
-### Load seismic data
-
-Fetch the latest 30 days of events from USGS into the database:
-
-```bash
-docker compose exec backend bin/rails sismo:fetch_data
-```
-
-The task reports how many records were created, skipped as duplicates, and rejected by validation.
 
 ### Access the apps
 
