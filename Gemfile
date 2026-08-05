@@ -52,10 +52,6 @@ end
 
 gem 'dotenv-rails', '~> 2.1', '>= 2.1.1', groups: %i[development test]
 
-gem 'httparty', '>= 0.24.0'
-
-gem 'csv'
-
 gem 'will_paginate', '~> 4.0'
 
 gem 'rack-cors', '~> 2.0', '>= 2.0.2'
