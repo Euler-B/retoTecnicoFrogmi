@@ -10,9 +10,18 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2026_08_03_034001) do
+ActiveRecord::Schema[7.2].define(version: 2026_08_05_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+
+  create_table "devices", force: :cascade do |t|
+    t.string "fcm_token", limit: 255, null: false
+    t.string "platform", default: "web", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["fcm_token"], name: "index_devices_on_fcm_token", unique: true
+    t.check_constraint "platform::text = 'web'::text", name: "devices_platform_is_web"
+  end
 
   create_table "reports", force: :cascade do |t|
     t.bigint "sismo_id", null: false

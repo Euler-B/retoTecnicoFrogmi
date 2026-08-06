@@ -62,4 +62,16 @@ class RateLimitingTest < ActionDispatch::IntegrationTest
       assert_includes json['error'], 'Rate limit exceeded'
     end
   end
+
+  test 'returns 429 when POST device rate limit is exceeded' do
+    travel_to Time.utc(2026, 8, 4, 12, 0, 0) do
+      5.times do |index|
+        post devices_url, params: { fcm_token: "token-#{index}" }, as: :json
+        assert_response :success
+      end
+
+      post devices_url, params: { fcm_token: 'token-5' }, as: :json
+      assert_response :too_many_requests
+    end
+  end
 end
