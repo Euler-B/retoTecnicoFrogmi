@@ -4,5 +4,6 @@ Rails.application.routes.draw do
       get 'stats', on: :collection
       resources :reports, only: [:create]
     end
+    resources :devices, only: %i[index create destroy]
   end
 end

@@ -190,6 +190,36 @@ curl -X POST 'http://localhost:3000/v1/sismos/1/reports' \
 - `404 Not Found` — the referenced event does not exist
 - `429 Too Many Requests` — rate limit exceeded (see [Rate Limiting](#rate-limiting))
 
+**Register a web notification device**
+
+```http
+POST /v1/devices
+```
+
+```bash
+curl -X POST 'http://localhost:3000/v1/devices' \
+  -H 'Content-Type: application/json' \
+  -d '{"fcm_token":"token-from-firebase-messaging"}'
+```
+
+The token is unique and is stored with `platform: "web"`.
+
+**List or remove notification devices**
+
+```http
+GET /v1/devices
+DELETE /v1/devices/:id
+```
+
+These endpoints require the administrative header:
+
+```http
+X-Admin-Token: <ADMIN_TOKEN>
+```
+
+`GET /v1/devices` returns only the FCM token strings so the notification
+service can send alerts without accessing the database directly.
+
 ---
 
 ## Rate Limiting
@@ -200,6 +230,7 @@ Public write endpoints are protected against abuse via [`rack-attack`](https://g
 |---|---|---|
 | Global | 60 requests/minute | Per IP, all endpoints except `/assets` |
 | Reports | 5 requests/minute | Per IP, `POST /v1/sismos/:id/reports` only |
+| Devices | 5 requests/minute | Per IP, `POST /v1/devices` only |
 
 Exceeding a limit returns `429 Too Many Requests` with a `Retry-After` header and a JSON error body:
 

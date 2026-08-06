@@ -26,7 +26,12 @@ module Rack
       req.ip if req.path_info.match?(%r{\A/v1/sismos/\d+/reports(?:\.[^/]+)?\z}) && req.post?
     end
 
-    # 3. Custom Response for Throttled Requests (HTTP 429)
+    # 3. Throttle device registration by IP (5 req/min)
+    throttle('devices/ip', limit: 5, period: 1.minute) do |req|
+      req.ip if req.path_info.match?(%r{\A/v1/devices(?:\.[^/]+)?\z}) && req.post?
+    end
+
+    # 4. Custom Response for Throttled Requests (HTTP 429)
     self.throttled_responder = lambda do |request|
       match_data = request.env['rack.attack.match_data'] || {}
       now = match_data[:epoch_time] || Time.now.to_i
